@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Annotator</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>  
+    <style>
+    /* Center the loader */
+        #load {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 1;
+        width: 120px;
+        height: 120px;
+        margin: -76px 0 0 -76px;
+        border: 16px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 16px solid #3498db;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite;
+        }
+
+        @-webkit-keyframes spin {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(360deg); }
+        }
+
+        @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+        }
+
+        /* Add animation to "page content" */
+        .animate-bottom {
+        position: relative;
+        -webkit-animation-name: animatebottom;
+        -webkit-animation-duration: 1s;
+        animation-name: animatebottom;
+        animation-duration: 1s
+        }
+
+        @-webkit-keyframes animatebottom {
+        from { bottom:-100px; opacity:0 } 
+        to { bottom:0px; opacity:1 }
+        }
+
+        @keyframes animatebottom { 
+        from{ bottom:-100px; opacity:0 } 
+        to{ bottom:0; opacity:1 }
+        }
+
+        #myDiv {
+        display: none;
+        text-align: center;
+        }
+
+        input, select {
+            display: inline-block;
+            width: 10em;
+        }
+        label {
+            display: inline-block;
+            width: 10em;
+            margin-right: .5em;
+            padding-top: 1.5em;
+            text-align:center;
+        }
+        #outer
+        {
+            width:100%;
+            text-align: center;
+        }
+        .inner
+        {
+            display: inline-block;
+        }
+
+        #taxonomy{
+            width:150px;   
+        }
+
+        .float{
+            position:fixed;
+            width:60px;
+            height:60px;
+            bottom:40px;
+            left:40px;
+            background-color:#0C9;
+            color:#FFF;
+            border-radius:50px;
+            text-align:center;
+            box-shadow: 2px 2px 3px #999;
+            
+        }
+    </style>
+</head>
+
+<body>
+    <div
+        class="d-none"
+        id="loading"
+        style="width: 100vw; height:100%;opacity: 0.5;background-color: black ; display: flex; justify-content: center; align-items: center;position: absolute; z-index: 1;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+    </div>
+    <div class="container-fluid" id="contents">
+            <div class="row container-fluid">
+                <div class="col-12">
+                    <center>
+                        <h1 style="font-size:75px;background-color: blue;color: white;">ANNOTATOR</h1>
+                    </center>
+                    <p id="count" class="bg-primary"
+                        style="width: fit-content; color: white; padding: 5px; font-weight: bold; position: absolute; right: 15px; font-size: 20px;">
+                    </p>
+                    <div>
+                        <p id="state" class="bg-primary"
+                            style="width: fit-content; color: white; padding: 5px; font-weight: bold; margin-left: auto; margin-right: auto; font-size: 20px;"></p>
+                        <div id="stateSwitch" class="state-switch btn-group" role="group" aria-label="Basic example" style="height: 35px; margin-right: auto; margin-left: auto;">
+                            <button type="button" class="btn btn-secondary" onclick="changeState('denoise')">CODA</button>
+                            <button type="button" class="btn btn-secondary" onclick="changeState('tags')">Morphology</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row container-fluid">
+                <!-- Search Bar -->
+                <div class="col-3 container-fluid">
+                    <div class="jumbotron">
+                        <h1>Search Field</h1>
+                        <p class="lead">Examples from other treebanks to help you tag.</p>
+                        <hr class="my-4">
+
+                        <div class="row container-fluid" style="width: 100%;">
+                            <!-- <input style="width: 80%;" class="col-8" type="text" name="search_txt0" id="search_txt0">
+                            <input type="button" class="btn btn-primary btn-md col-3 offset-1" style="width: 20%;" value="Search" onclick="search()"> -->
+                            <input style="width: 80%;" class="col-8" type="text" name="search_txt0" id="search_txt0">
+                            <input type="button" id="btn1" class="btn btn-primary btn-md col-3 offset-1" style="width: 20%;" value="Search"
+                                onclick="search()">
+                        </div>
+
+                        <div class="row container-fluid" style="width: 100%;margin-top: 10%;">
+                                <select  style="width: 30%;" class="btn btn-secondary dropdown-toggle col-3" id="search_txt1">
+                                    <option>Baseword</option>
+                                    <option>Enclitic</option>
+                                    <option>Proclitic</option>
+                                </select>
+                                <select style="width: 30%;" class="btn btn-secondary dropdown-toggle col-3 offset-1" id="search_txt2">
+                                    <option>Approximate</option>
+                                    <option>Exact</option>
+                                </select>
+                                <select style="width: 30%;" class="btn btn-secondary dropdown-toggle col-3 offset-1" id="search_txt3">
+                                    <option>Gulf Tags</option>
+                                    <option>MSA Tags</option>
+                                    <option>CODA Examples</option>
+                                </select>
+                        </div>
+                        <div class="row width: 100%">
+                            <div class="col-12">
+                                <div class="my-2" id="search_value" style="width: 100%;word-break: break-all">
+                                
+                                </div>
+                            </div>
+                        </div>
+                      </div>
+                </div>
+        
+                <!-- Content -->
+                <div class="col-6" style="border-width: 2px;border-color: blue;">
+        
+                    <div class="row">
+                        <div class="col-12" style="width: 100%;">
+                            <input type="text" dir="rtl" name="raw" id="raw_txt" value="" style="width: 100%;font-size: 200%;margin-top: 5%;" onclick="GetSelection()" onkeypress="return false">
+                            <input type="text" dir="rtl" name="fixed_raw" id="fixed_raw_txt" value="" style="width: 100%;font-size: 200%;display: none; margin-top: 5%">
+                        </div>
+                    </div>
+                    <div class="row"></div>
+                    <div class="row" style="width: 100%;">
+                        <input type="button" id="fix_sentence" class="col-5 btn btn-primary" value="Fix Phrase" style="margin-top: 5%;" onclick="fixPhrase()">
+                        <div style="position: absolute; right: 20%;">
+                            </br>
+                            <p id="codaTokenCount" class="bg-danger"
+                                style="width: fit-content; color: white; padding: 5px; font-weight: bold; font-size: 20px;">
+                            </p>
+                            <p id="morphologyTokenCount" class="bg-danger"
+                                style="width: fit-content; color: white; padding: 5px; font-weight: bold; font-size: 20px;">
+                            </p>
+                        </div>
+                    </div>
+                    </br>
+                    </br>
+                    <div class="row" style="width: 100%;">
+                        <div id="newStr">
+
+                        </div>
+    
+                    </div>
+
+                    </br>
+
+                    <div class="row">
+                        <div id="newStrTags" style="margin: 5%;"></div>
+                    </div>
+
+                    <div class="row">
+                        <input type="button" id="resetAllButton" class="btn btn-danger col-3 inner" value="Reset All" onclick="reset(this)">
+                        <input type="button" class="btn btn-primary col-3 inner" value="Reset CODA" onclick="resetCODA()">
+                        <input type="button" class="btn btn-info col-3 inner" value="Reset Morphology" onclick="resetMorphology()">
+                        <input type="button" id="saveAndNextButton" class="btn btn-success float" value="Save and Next" onclick="nextPhrase()">   
+                    </div>
+     
+                </div>
+        
+                <!-- List of Phrases -->
+                <div class="col-3 container-fluid">
+                    <div class="jumbotron">
+                        <h1>Sentences</h1>
+                        <p class="lead">Here are the sentences which should be annotated.</p>
+                        <div class="row container-fluid" style="width: 100%;">
+                            <input style="width: 60%; margin-right: 10%;" type="text" name="search_txt4" id="search_txt4">
+                            <span class="row float-right" style="margin-bottom: 10px;">
+                                {% if filtered%}
+                                <input class="btn btn-primary" type="button" id="filter_prev_btn" value="Back To Normal"
+                                    onclick="searchPreviousAnnotations()">
+                                {% else %}
+                                <input class="btn btn-primary" type="button" id="filter_prev_btn" value="Filter By Search"
+                                    onclick="searchPreviousAnnotations()">
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="row container-fluid" style="width: 100%;margin-top: 2%;">
+                            <select style="width: 30%;" class="btn btn-secondary dropdown-toggle col-3" id="search_txt5">
+                                <option>Raw</option>
+                                <option>CODA</option>
+                                <option>Segments</option>
+                            </select>
+                            <select style="width: 30%;" class="btn btn-secondary dropdown-toggle col-3 offset-1" id="search_txt6">
+                                <option>Text</option>
+                                <option>Verb Form</option>
+                                <option>POS</option>
+                                <option>Lemma</option>
+                            </select>
+                            <select style="width: 30%;" class="btn btn-secondary dropdown-toggle col-3 offset-1" id="search_txt7">
+                                <option>Approximate</option>
+                                <option>Exact</option>
+                            </select>
+                            <select style="width: 30%; margin-top: 5%;" class="btn btn-secondary dropdown-toggle col-3 offset-1" id="search_txt8">
+                                {% for text in annotators%}
+                                <option>{{text}}</option>
+                                {% endfor %}
+                            </option>
+                            </select>
+                        </div>
+                        <div class="row float-right">
+                            {% if filtered%}
+                            <input class="btn btn-primary" type="button" id="filter_btn" value="Back To Normal" onclick="toggleFilter()">
+                            {% else %}
+                            <input class="btn btn-primary" type="button" id="filter_btn" value="Filter By Flag" onclick="toggleFilter()">
+                            {% endif %}
+                        </div>
+                        </br>
+                        <hr class="my-4">
+
+                        <div class="row container-fluid" style="width: 100%;">
+                            <ul class=”list-group list-group-flush” style="height: 100vh; overflow: auto;">
+                                {% for text in phrases%}
+                                <div id="phrase{{loop.index}}">
+                                <p dir="rtl" lang="ar" style="width: 100%;text-align: right;font-size: 150%;" onclick="SetText(this)">{{text}}</p>
+                                <hr class="my-2">
+                                </div>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <div>
+
+                        </div>
+
+                      </div>
+                </div>
+            </div>
+    </div>
+
+    <script type="text/javascript">
+        var startStrCODA = 0
+        var startStrMorphology = 0
+        var state = "denoise"
+        updateState()
+        var phrasesArray = {{phrases|safe}}
+        var annotatedIndexes = {{annotated_indexes|safe}}
+        var filteredState = {{ filtered |tojson|safe}}
+        var annotators = {{ annotators| safe}}
+        var colors = ["bg-success", "bg-danger", "bg-primary", "bg-info", "bg-warning"]
+        var annotatorColors = {}
+
+        var tags_txt = []
+        var raw_txt = []
+        var denoised_txt = []
+        var taxonomy = []
+        var tags = []
+
+        var segment = []
+
+        var poses = []
+        var aspects = []
+        var persons = []
+        var genders = []
+        var numbers = []
+        var states = []
+        var voices = []
+        var moods = []
+        var flags = []
+        var isMSAs = []
+        var lemmas = []
+        var verbForms = []
+        var nounForms = []
+
+        var delimiters = []
+
+        var original_txt = ""
+        var fixed_phrase = ""
+
+        var beginTags = false
+
+        var searchObj = ""
+        var counterIds=0
+        var currentSentenceId = 0
+        var delimitersTags = []
+        var undoEnabled = true
+        var lastDelim = []
+        // Tags
+
+        var pos_vals = ["ABBREV","ADJ","ADJ_COMP","ADJ_NUM","ADV","ADV_INTERROG","ADV_REL","CONJ","CONJ_SUB","DIGIT","FORIEGN","INTERJ","NOUN","NOUN_NUM","NOUN_PROP","NOUN_QUANT","PART","PART_CONNECT","PART_DET","PART_EMPHATIC","PART_FOCUS","PART_FUT","PART_INTERROG","PART_NEG","PART_PROG","PART_RC","PART_RESTRICT","PART_VERB","PART_VOC","PREP","PRON","PRON_DEM","PRON_EXCLAM","PRON_INTERROG","PRON_REL","PUNC","VERB","VERB_NOM","VERB_PSEUDO"]
+        var aspecT_vals = ["P","I","C"]
+        var person_vals = ["1","2","3"]
+        var gender_vals = ["M", "F"]
+        var number_vals = ["S", "D", "P"]
+        var state_vals = ["D", "I", "C"]
+        var voice_vals = ["A", "P"]
+        var mood_vals = ["S", "I", "J"]
+        var verbForm_vals = ["فَعَل" ,"فَعَّل", "فاعَل", "أفْعَل", "تَفَعَّل", "تَفاعَل", "اِنْفَعَل", "اِفْتَعَل", "اِفْعَل", "اِسْتَفْعَل", "اِفْعَال", "اِفْعَوْعَل", "اِفْعَوَّل", "فَعْلَل", "فَعْفَع", "فَعْوَعل", "فَعْفَل"]
+        var nounForm_vals = ["n1", "n2"]
+        var taxonomy_tags = ["I - Regular | Alef normalization",
+                             "I - Regular | Shadda within base word",
+                             "II - Phonetic errors | Phoneme-grapheme mismatch",
+                             "II - Phonetic errors | t-letter mismatch",
+                             "III - No cognate | Proper noun",
+                             "III - No cognate | Etymological words",
+                             "III - No cognate | Foreign words",
+                             "III - No cognate | Interjections",
+                             "IV - Split | Clitic-prefix",
+                             "IV - Split | Prefix-stem",
+                             "IV - Split | Clitic-stem",
+                             "IV - Split | Stem-suffix",
+                             "IV - Merged | Clitic-stem",
+                             "V - Enclitic norm. | Verbs",
+                             "V - Enclitic norm. | FW",
+                             "V - Enclitic norm. | Nouns",
+                             "V - Prefix norm. | Command",
+                             "V - Prefix norm. | Imperfective | with b,m",
+                             "V - Prefix norm. | Imperfective | Assimilated prefix",
+                             "V - Prefix norm. | Perfective | Active",
+                             "V - Prefix norm. | Perfective | Passive",
+                             "V - Suffix norm. | Plural nouns",
+                             "V - Suffix norm. | Verbs",
+                             "V - Suffix norm. | FW",
+                             "V - Al-taarif normalization",
+                             "V - Gemination | Templatic",
+                             "V - Gemination | Clitic boundary",
+                             "V - Madda",
+                             "V - Imperfective | Hamza-beginning verbs",
+                             "VI - Inflectional inconsist. | Vowel short.",
+                             "VI - Inflectional inconsist. | Vowel elong.",
+                             "VII - Homophone | Ta-marbuta",
+                             "VII - Homophone | FW | Regular",
+                             "VII - Homophone | Tanwin",
+                             "VII - Homophone | Vowel phoneme norm. | Final",
+                             "VII - Homophone | Voew phoneme norm. | Mid",
+                             "VIII - Non-homophone | Root-radical div.",
+                             "VIII - Non-homophone | FW | ID div.",
+                             "VIII - Non-homophone | FW | Regular", 
+                             "VIII - Non-homophone | Cognate phoneme drop",
+                             "VIII - Non-homophone | Phoneme substitution",
+                             "VIII - Non-homophone | Numbers",
+                             "VIII - Non-homophone | ID div.",
+                             "VIII - Non-homophone | Letter switch",
+                             "IX - Heavy divergence",
+                            ]
+
+        var searchBarExamples = document.getElementById('search_txt0');
+
+        for (var a = 0; a < annotators.length - 2; a++) {
+            annotatorColors[annotators[a].toLowerCase()] = colors[a]
+        }
+
+        for (var i = 0; i < phrasesArray.length; i++) {
+            phrasesArray[i] = phrasesArray[i].replace("\n", "")
+            if (filteredState) { 
+                document.getElementById("phrase" + (i + 1)).className = annotatorColors[annotatedIndexes[i]];
+            }
+            else {
+                if (annotatedIndexes[i] == "annotated") {
+                    document.getElementById("phrase" + (i + 1)).className = "bg-success";
+                }
+            }
+        }
+
+        checkCount()
+
+        fetch(`/getCount`)
+            .then(function (response) {
+                return response.text();
+            }).then(function (text) {
+                console.log('Count of already annotated sentences:');
+                console.log(text);
+                updateCount(text)
+                // console.log(search_res);
+        });
+
+        function updateState() {
+                let text = "CODA Segmentation and SO Standardization"
+                if (state === 'tags') {
+                    document.getElementById("state").classList.remove('bg-primary');
+                    document.getElementById("state").classList.add('bg-secondary');
+                    text = "Morphological Segmentation and Tagging"
+                }
+                else {
+                    document.getElementById("state").classList.remove('bg-secondary');
+                    document.getElementById("state").classList.add('bg-primary');
+                }
+                document.getElementById("state").innerHTML = text;
+            }
+
+        function changeState(s) {
+            if (s == "tags") {
+                state = "tags"
+                beginTags = true
+            }
+            else if (s == "denoise") {
+                state = "denoise"
+                beginTags = false
+            }
+            updateState()
+        }
+
+        function updateCount(status) {
+            document.getElementById("count").classList.add('bg-warning');
+            document.getElementById("count").textContent = status;
+        }
+
+        searchBarExamples.addEventListener("keyup", function (event) {
+            if (event.keyCode === 13) {
+                // Cancel the default action, if needed
+                event.preventDefault();
+                // Trigger the button element with a click
+                document.getElementById("btn1").click();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.ctrlKey && event.key === 'z' && undoEnabled) {
+                undo()
+                checkCount()
+            }
+        });
+
+        document.addEventListener('click', event => {
+            checkCount()
+        });
+
+        function checkCount() {
+            var codaTokens = ("CODA Tokens: " + raw_txt.length);
+            var morphologyTokens = ("Morphology Tokens: " + tags_txt.length);
+            document.getElementById("codaTokenCount").innerHTML = codaTokens;
+            document.getElementById("morphologyTokenCount").innerHTML = morphologyTokens;
+            if (raw_txt.length == tags_txt.length && raw_txt.length != 0) {
+                document.getElementById("codaTokenCount").className = "bg-success";
+                document.getElementById("morphologyTokenCount").className = "bg-success";
+                document.getElementById("saveAndNextButton").disabled = false
+                $('.state-switch button').removeAttr('disabled');
+
+            }
+            else {
+                document.getElementById("codaTokenCount").className = "bg-danger";
+                document.getElementById("morphologyTokenCount").className = "bg-danger";
+                document.getElementById("saveAndNextButton").disabled = true
+                $('.state-switch button').attr('disabled', 'disabled');
+            }
+        }
+
+        function fixPhrase(){
+            if(document.getElementById("fix_sentence").value == "Validate Fix"){
+                document.getElementById("raw_txt").value = document.getElementById("fixed_raw_txt").value
+                document.getElementById("fixed_raw_txt").style.display = "none"
+                document.getElementById("raw_txt").disabled = false 
+                fixed_phrase = document.getElementById("fixed_raw_txt").value
+                if (fixed_phrase == original_txt){
+                    fixed_phrase = ""
+                }
+                document.getElementById("fix_sentence").value = "Fix Phrase"
+            }
+            else
+            {
+                var str = document.getElementById("raw_txt").value 
+                var var_raw_txt = document.getElementById("raw_txt")
+                var var_fixed_raw_txt = document.getElementById("fixed_raw_txt")
+
+                var_fixed_raw_txt.value = str
+                var_raw_txt.disabled = true
+                var_fixed_raw_txt.style.display = "inline-block"
+             
+                document.getElementById("fix_sentence").value = "Validate Fix"
+            }
+        }
+
+        function postForm(path, params, method) {
+                method = method || 'post';
+
+                var form = document.createElement('form');
+                form.setAttribute('method', method);
+                form.setAttribute('action', path);
+
+                for (var key in params) {
+                    if (params.hasOwnProperty(key)) {
+                        var hiddenField = document.createElement('input');
+                        hiddenField.setAttribute('type', 'hidden');
+                        hiddenField.setAttribute('name', key);
+                        hiddenField.setAttribute('value', params[key]);
+
+                        form.appendChild(hiddenField);
+                    }
+                }
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+        function searchPreviousAnnotations() {
+            var filter_btn = document.getElementById("filter_prev_btn")
+            var search_txt4 = document.getElementById("search_txt4").value
+            var search_txt5 = document.getElementById("search_txt5").value
+            var search_txt6 = document.getElementById("search_txt6").value
+            var search_txt7 = document.getElementById("search_txt7").value
+            var search_txt8 = document.getElementById("search_txt8").value
+
+            var jsontoSend = {
+                search_txt4: search_txt4,
+                search_txt5: search_txt5,
+                search_txt6: search_txt6,
+                search_txt7: search_txt7,
+                search_txt8: search_txt8,
+            }
+
+            if (filter_prev_btn.value == "Filter By Search") {
+                filter_prev_btn.value = "Back To Normal"
+                // Load with Filters
+                postForm('/getSearchPreviousAnnotations/form', jsontoSend);
+            }
+            else if (filter_prev_btn.value == "Back To Normal") {
+                filter_prev_btn.value = "Filter By Search"
+                // Load without filters
+                window.location.href = "/";
+            }
+        }
+
+        function toggleFilter(){
+            var filter_btn = document.getElementById("filter_btn")
+            if(filter_btn.value == "Filter By Flag"){
+                filter_btn.value = "Back To Normal"
+                // Load with Filters
+                window.location.href = "/filteredRes";
+            }
+            else if(filter_btn.value == "Back To Normal"){
+                filter_btn.value = "Filter By Flag"
+                // Load without filters
+                window.location.href = "/";
+            }
+        }
+
+        function search(){
+            var search_txt0 = document.getElementById("search_txt0").value
+            var search_txt1 = document.getElementById("search_txt1").value
+            var search_txt2 = document.getElementById("search_txt2").value
+            var search_txt3 = document.getElementById("search_txt3").value
+
+            var jsontoSend = {
+                search_txt0: search_txt0,
+                search_txt1: search_txt1,
+                search_txt2: search_txt2,
+                search_txt3: search_txt3
+            }
+
+            var toSend = JSON.stringify(jsontoSend)
+            fetch(`/getSearch/${toSend}`)
+                .then(function (response) {
+                    return response.text();
+                }).then(function (text) {
+                    console.log('GET response text:');
+                    console.log(text); 
+                    var search_res = JSON.parse(text)
+                    parseSearch(search_res)
+                    // console.log(search_res);
+                });
+            
+                document.getElementById("search_value").innerHTML = ""
+        }
+
+        function parseSearch(obj){
+            searchObj = obj
+            // console.log(obj)
+            // var json = JSON.stringify(obj);
+            // console.log(json)
+
+            // Parent HTML
+            var searchField = document.getElementById("search_value")
+
+            if(document.getElementById("search_txt3").value == "CODA Examples"){
+                Object.keys(obj).forEach(pos_key => {
+                    var posKey = obj[pos_key]
+                    Object.keys(posKey).forEach(example => {
+                        searchField.innerHTML += '<li>'+example+' : '+ posKey[example]+'</li>'
+                        // console.log(example+" : "+posKey[example])
+                    })
+                    searchField.innerHTML += '<hr class="my-4">'
+                })
+            }
+            else{
+                Object.keys(obj).forEach(pos_key => {
+                // Div inside of it H1 Key BR
+                searchField.innerHTML += '<p value="'+pos_key+'" onclick="parsePOS(this)">'+pos_key+'</p><hr class="my-4">'
+                var posKey = obj[pos_key] 
+                })
+            }
+    }
+
+        function parsePOS(posObj){
+        console.log(searchObj[$(posObj).text()])
+        var searchField = document.getElementById("search_value")
+        var posKey = searchObj[$(posObj).text()]
+        searchField.innerHTML = '<div><p>'+$(posObj).text()+'</p>'
+            Object.keys(posKey).forEach(example => {
+                    var example = posKey[example]
+                    console.log(example.length)
+                    Object.keys(example).forEach(field => {
+                        // console.log(field+" : "+example[field])
+                        searchField.innerHTML += '<li>'+field+' : '+example[field]+'</li>'
+                    })
+                    searchField.innerHTML += '<hr class="my-4">'
+                })
+        searchField.innerHTML += '</div>'
+    }
+
+        function loadPrevious(obj){
+            fetch(`/getPreviousAnnotations/${obj}`)
+                .then(function (response) {
+                    return response.text();
+                }).then(function (text) {
+                    console.log('GET response text:');
+                    generatePreviousAnnotations(text)
+                });
+        }
+
+        function checkIfAnnotated(obj){
+            fetch(`/getAnnotationStatus/${obj}`)
+                .then(function (response) {
+                    return response.text();
+                }).then(function (text) {
+                    console.log('GET response text:');
+                    if(text == "annotated"){
+                        loadPrevious(obj)
+                        document.getElementById("fix_sentence").disabled = true
+                    }
+                    else{
+                        document.getElementById("fix_sentence").disabled = false
+                    }
+                });            
+        }
+
+        function GetSelection() {
+            if(state == "denoise"){
+                GetSelectionDenoise()
+            }
+            else{
+                if(beginTags == true){
+                    GetSelectionAddTag()
+                    beginTags = false
+                }
+                else{
+                    GetSelectionAddTag()
+                }
+            }
+        }
+
+        function GetSelectionDenoise() {
+            var delim = document.getElementById("raw_txt").selectionStart
+            var str = document.getElementById("raw_txt").value 
+            var newStr = str.substring(startStrCODA,delim)
+            document.getElementById("fix_sentence").disabled = true
+            raw_txt.push(newStr.trim())
+            taxonomy.push("equal")
+            lastDelim.push(0)
+            delimiters.push(delim)
+            lastDelim[lastDelim.length - 1] += 1
+            if(str[delim]==" "){
+                delimiters.push(delim+1)
+                lastDelim[lastDelim.length - 1] += 1
+            }
+            if(str[delim-1]==" "){
+                delimiters.push(delim-1)
+                lastDelim[lastDelim.length - 1] += 1
+            }
+            createCODAToken(newStr)
+            if (delim==str.length){
+                startStrCODA = 0
+                state = "tags"
+                updateState()
+                beginTags = true
+                return
+            }
+            startStrCODA = delim
+            console.log(delimiters)
+        }
+
+        function createCODAToken(newStr) {
+            var codaToken = '<div id="CT' + counterIds + '">'
+            codaToken += '<span><input dir="rtl" type="text" value="' + newStr + '" style="font-size: 150%;" onchange="taxonomyTag(this)"></span>'
+            codaToken += '</div>'
+            document.getElementById("newStr").innerHTML += codaToken
+            counterIds += 1
+            document.getElementById("newStr").innerHTML += "</br>"
+        }
+
+        function taxonomyTag(codaToken) {
+            var codaTokens = document.getElementById("newStr").childNodes
+            var codaTokenId = parseInt(codaToken.parentElement.parentElement.id.substring(2))
+            codaToken = codaTokens[codaTokenId * 2]
+            var codaTokensStr = []
+            $('#newStr').find('input').each(function () {
+                codaTokensStr.push($(this).val().trim());
+            });
+            if (codaTokensStr[codaTokenId].trim() != raw_txt[codaTokenId].trim()) {
+                addTaxonomyTag(undefined, codaToken)
+                taxonomy.splice(codaTokenId, 0, ['NONE'])
+            }
+            else { 
+                if (codaToken.childNodes.length >= 3) {
+                    taxonomy[codaTokenId] = "equal"
+                }
+                while (codaToken.childNodes.length > 1) {
+                    codaToken.removeChild(codaToken.lastChild)
+                }
+                codaToken.firstChild.removeChild(codaToken.firstChild.lastChild)
+            }
+        }
+
+        function addTaxonomyTag(button, codaToken, value) {
+            if (button != undefined) {
+                codaToken = button.parentElement
+                var codaTokenId = parseInt(codaToken.id.substring(2))
+                taxonomy[codaTokenId].push('NONE')
+            }
+            var numberOfTagsToAdd = 1
+            if (value != undefined) {
+                numberOfTagsToAdd = value.length
+            }
+            for (var i = 0; i < numberOfTagsToAdd; i++) {
+                var taxonomy_tag = '<span>' +
+                    '<select name="taxonomy" class="taxonomy" onchange="changeTagValue(this)">' +
+                    '<option value="NONE" selected>NONE</option>'
+                taxonomy_tags.forEach(t => {
+                    taxonomy_tag += '<option value="' + t + '">' + t + '</option>'
+                });
+                taxonomy_tag += "</select>"
+                if (codaToken.childNodes.length == 3) {
+                    var deleteButton = document.createElement('div')
+                    deleteButton.innerHTML = '<button type="button" class="btn btn-danger btn-sm" onclick="deleteTaxonomyTag(this)">✖</button>'
+                    codaToken.childNodes[1].insertBefore(deleteButton.firstChild, null)
+                }
+                if (codaToken.childNodes.length >= 3) {
+                    taxonomy_tag += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteTaxonomyTag(this)">✖</button>'
+                }
+                taxonomy_tag += '</span>'
+                var newElem = document.createElement('div')
+                newElem.innerHTML = taxonomy_tag
+                if (value != undefined) {
+                    newElem.firstChild.firstChild.value = value[i]
+                }
+                newElem.firstChild.lastChild.disabled = false
+                if (codaToken.childNodes.length == 1) {
+                    var newButton = document.createElement('div')
+                    newButton.innerHTML = '<button type="button" class="btn btn-success btn-sm" onclick="addTaxonomyTag(this)">+</button>'
+                    newButton = newButton.firstChild
+                    codaToken.insertBefore(newButton, null)
+                    var codaTokenId = parseInt(codaToken.id.substring(2))
+                    var rawText = document.createElement('div')
+                    rawText.innerHTML = '<span class="bg-warning" style = "padding: 5px; font-size: 25px;">' + raw_txt[codaTokenId] + '</span>'
+                    codaToken.firstChild.insertBefore(rawText.firstChild, null)
+                }
+                codaToken.insertBefore(newElem.firstChild, codaToken.lastChild)
+            }
+        }
+
+        function changeTagValue(dropdownMenu) {
+            var codaToken = dropdownMenu.parentElement.parentElement
+            var codaTokenId = parseInt(codaToken.id.substring(2))
+            var thisTag = dropdownMenu.parentElement
+            var tag_index = Array.prototype.indexOf.call(codaToken.childNodes, thisTag) - 1
+            taxonomy[codaTokenId][tag_index] = dropdownMenu.value
+        }
+
+        function deleteTaxonomyTag(button) {
+            var codaToken = button.parentElement.parentElement
+            var codaTokenId = parseInt(codaToken.id.substring(2))
+            if (codaToken.childNodes.length > 3) {
+                var thisTag = button.parentElement
+                var tag_index = Array.prototype.indexOf.call(codaToken.childNodes, thisTag) - 1
+                codaToken.removeChild(thisTag)
+                taxonomy[codaTokenId].splice(tag_index, 1)
+            }
+            if (codaToken.childNodes.length == 3) {
+                codaToken.childNodes[1].removeChild(codaToken.childNodes[1].lastChild)
+            }
+        }
+
+        function getCorrespondingFeatures(selectedInput){
+            var aspect =
+                '<label class="form-check-label">Aspect' +
+                '<select name="aspect" class="aspect" id="aspect" size="4">' +
+                '<option value="NONE" selected>NONE</option>'
+
+            aspecT_vals.forEach(a => {
+                aspect += '<option value="' + a + '">' + a + '</option>'
+            });
+            aspect += "</select></label>"
+
+
+            var person =
+                '<label class="form-check-label">Person' +
+                '<select name="person" class="person" id="person" size="4">' +
+                '<option value="NONE" selected>NONE</option>'
+
+            person_vals.forEach(a => {
+                person += '<option value="' + a + '">' + a + '</option>'
+            });
+            person += "</select></label>"
+
+
+            var gender =
+                '<label class="form-check-label">Gender' +
+                '<select name="gender" class="gender" id="gender" size="3">' +
+                '<option value="NONE" selected>NONE</option>'
+
+            gender_vals.forEach(a => {
+                gender += '<option value="' + a + '">' + a + '</option>'
+            });
+            gender += "</select></label>"
+
+
+            var number =
+                '<label class="form-check-label">Number' +
+                '<select name="number" class="number" id="number" size="4">' +
+                '<option value="NONE" selected>NONE</option>'
+
+            number_vals.forEach(a => {
+                number += '<option value="' + a + '">' + a + '</option>'
+            });
+            number += "</select></label>"
+
+
+            var state =
+                '<label class="form-check-label">State' +
+                '<select name="state" class="state" id="state" size="4">' +
+                '<option value="NONE" selected>NONE</option>'
+
+            state_vals.forEach(a => {
+                state += '<option value="' + a + '">' + a + '</option>'
+            });
+            state += "</select></label>"
+
+
+            var voice =
+                '<label class="form-check-label">Voice' +
+                '<select name="voice" class="voice" id="voice" size="3">' +
+                '<option value="NONE" selected>NONE</option>'
+
+            voice_vals.forEach(a => {
+                voice += '<option value="' + a + '">' + a + '</option>'
+            });
+            voice += "</select></label>"
+
+
+            var mood =
+                '<label class="form-check-label">Mood' +
+                '<select name="mood" class="mood" id="mood" size="4">' +
+                '<option value="NONE" selected>NONE</option>'
+
+            mood_vals.forEach(a => {
+                mood += '<option value="' + a + '">' + a + '</option>'
+            });
+            mood += "</select></label>"
+
+            var verbForm =
+                '<label class="form-check-label">Verb Form' +
+                '<select name="verbForm" class="verbForm" id="verbForm"> size="4"' +
+                '<option value="NONE" selected>NONE</option>'
+
+            verbForm_vals.forEach(a => {
+                verbForm += '<option value="' + a + '">' + a + '</option>'
+            });
+            verbForm += "</select></label>"
+
+            var nounForm =
+                '<label class="form-check-label">Noun Form' +
+                '<select name="nounForm" class="nounForm" id="nounForm"> size="3"' +
+                '<option value="NONE" selected>NONE</option>'
+
+            nounForm_vals.forEach(a => {
+                nounForm += '<option value="' + a + '">' + a + '</option>'
+            });
+            nounForm += "</select></label>"
+            
+            if (selectedInput.value == "ABBREV") {
+                var abbrevFeatures = aspect + person + gender + number + state + voice + mood + verbForm + nounForm
+                selectedInput.nextSibling.innerHTML = abbrevFeatures
+            }
+            else if (selectedInput.value.startsWith("ADJ")) {
+                var adjFeatures = gender + number
+                selectedInput.nextSibling.innerHTML = adjFeatures
+            }
+            else if (selectedInput.value.startsWith("NOUN")) {
+                var nounFeatures = gender + number + state + nounForm
+                selectedInput.nextSibling.innerHTML = nounFeatures
+            }
+            else if (selectedInput.value.startsWith("PRON")) {
+                var pronFeatures = person + gender + number
+                selectedInput.nextSibling.innerHTML = pronFeatures
+            }
+            else if (selectedInput.value.startsWith("VERB")) {
+                var verbFeatures = aspect + person + gender + number + voice + mood + verbForm
+                selectedInput.nextSibling.innerHTML = verbFeatures
+            }
+            else {
+                selectedInput.nextSibling.innerHTML = ""
+            }
+        }
+        
+        function GetSelectionAddTag() {
+            var delim = document.getElementById("raw_txt").selectionStart
+            var str = document.getElementById("raw_txt").value 
+            var newStr = str.substring(startStrMorphology,delim)
+            delimitersTags.push(delim)
+            if (tags.length == 0) {
+                document.getElementById("newStrTags").innerHTML += newToken()
+            }
+            tags.push(newStr.trim())
+            if(delimiters.includes(delim)){
+                tags_txt.push(tags)
+                tags = []
+            }
+            document.getElementById("newStrTags").lastChild.innerHTML += newPOSFeatures(newStr)
+            if (delim == str.length) {
+                $('.token-edit button').removeAttr('disabled');
+            }
+            else {
+                $('.token-edit button').attr('disabled', 'disabled');
+            }
+            counterIds +=1;
+            if (delim==str.length){
+                undoEnabled = false
+                console.log("TAGS : ",tags_txt)
+            }
+            startStrMorphology = delim
+        }
+
+        function newPOSFeatures(newStr) {
+            var pos =
+                '<select name="pos" class="pos w-14 h-25" onchange="getCorrespondingFeatures(this)" id="' + counterIds + '">' +
+                '<option value="NONE" selected>NONE</option>'
+
+            pos_vals.forEach(p => {
+                pos += '<option value="' + p + '">' + p + '</option>'
+            });
+            pos += "</select>"
+
+            var lemma = '<textarea class="lemma" style="font-size: 150%" id="lemma" name="lemma">' + newStr + '</textarea>'
+            var isMSA =
+                '<select name="isMSA" class="isMSA" id="isMSA" size="3">' +
+                '<option value="Lebanese" selected>Lebanese</option>' +
+                '<option value="MSA">MSA</option>' +
+                '<option value="Other">Other</option>'
+
+            isMSA += "</select>"
+
+            var flag_Btn = '<button class="n_flag" value="' + newStr + '" onclick="TagSegment(this)">Flag</button></div>'
+
+            var pos_features = "<div id=\"pos&features\" class=\"row\" style=\"margin-top: 5%; background-color: rgb(190,190,190);\"> "
+            pos_features += '<div id="segment_edit" class="token-edit btn-group" role="group" aria-label="Basic example" style="height: 35px">'
+            pos_features += '<button type="button" class="btn btn-secondary" onclick="addElem(this)">+↑</button>'
+            pos_features += '<button type="button" class="btn btn-secondary" onclick="addElem(this)">+↓</button>'
+            pos_features += '<button type="button" class="btn btn-secondary" onclick="deleteElem(this)">✖</button></div>'
+            pos_features += "<input dir=\"rtl\" class=\"inpt w-30\" type=\"text\" value=\"" + newStr + "\" style=\"font-size: 150%; height: 50px\">"
+            pos_features += pos
+            pos_features += "<div id=\"features\"></div>"
+            pos_features += lemma + isMSA + flag_Btn + "</br>"
+            return pos_features
+        }
+
+        function newToken() {
+            var token = "<div id=\"token\" class=\"row\" style=\"margin-top: 5%; background-color: rgb(0,0,0);\">"
+            token += '<div id="token_edit" class="token-edit btn-group" role="group" aria-label="Basic example" style="height: 35px">'
+            token += '<button type="button" class="btn btn-secondary" onclick="addElem(this)">+↑</button>'
+            token += '<button type="button" class="btn btn-secondary" onclick="addElem(this)">+↓</button>'
+            token += '<button type="button" class="btn btn-secondary" onclick="deleteElem(this)">✖</button></div></div>'
+            return token
+        }
+
+        function addElem(button) {
+            let newElem = document.createElement('div')
+            var br
+            if (button.parentElement.id == "segment_edit") {
+                newElem.innerHTML = newPOSFeatures('')
+                br = newElem.childNodes[1]
+                newElem = newElem.firstChild
+
+            }
+            else if (button.parentElement.id == "token_edit") {
+                newElem.innerHTML = newToken('')
+                newElem = newElem.firstChild
+                newElem.innerHTML += newPOSFeatures('')
+            }
+            var thisElem = button.parentElement.parentElement
+            if (button.innerText == "+↓") {
+                thisElem = thisElem.nextSibling
+            }
+            if (button.parentElement.id == "segment_edit") {
+                var token_index = Array.prototype.indexOf.call(button.parentElement.parentElement.parentElement.parentElement.childNodes, thisElem.parentElement)
+                var segment_index = Array.prototype.indexOf.call(button.parentElement.parentElement.parentElement.childNodes, thisElem)
+                segment_index = Math.floor(segment_index / 3)
+                tags_txt[token_index].splice(segment_index, 0, 'segment')
+            }
+            else if (button.parentElement.id == "token_edit") {
+                var token_index = Array.prototype.indexOf.call(button.parentElement.parentElement.parentElement.childNodes, thisElem)
+                if (button.innerText == "+↓") {
+                    if (token_index == -1) {
+                        tags_txt.push(['segment'])
+                    }
+                    else {
+                        tags_txt.splice(token_index, 0, ['segment'])
+                    }
+                }
+                else {
+                    tags_txt.splice(token_index, 0, ['segment'])
+                }
+                
+            }
+            if (button.parentElement.id == "segment_edit" && button.innerText == "+↓") {
+                button.parentElement.parentElement.parentElement.insertBefore(br, thisElem)
+            }
+            button.parentElement.parentElement.parentElement.insertBefore(newElem, thisElem) 
+            if (button.parentElement.id == "segment_edit" && button.innerText != "+↓") {
+                button.parentElement.parentElement.parentElement.insertBefore(br, thisElem)
+            }
+            checkCount()
+        }
+
+        function deleteElem(button) {
+            thisElem = button.parentElement.parentElement
+            if (button.parentElement.id == "token_edit"){
+                var token_index = Array.prototype.indexOf.call(thisElem.parentElement.childNodes, thisElem)
+                thisElem.parentElement.removeChild(thisElem)
+                tags_txt.splice(token_index, 1)
+            }
+            else if (button.parentElement.id == "segment_edit") {
+                var token_index = Array.prototype.indexOf.call(thisElem.parentElement.parentElement.childNodes, thisElem.parentElement)
+                var segment_index = Array.prototype.indexOf.call(thisElem.parentElement.childNodes, thisElem)
+                segment_index = Math.floor(segment_index / 3)
+                if (thisElem.parentElement.childNodes.length == 3) {
+                    thisElem.parentElement.parentElement.removeChild(thisElem.parentElement)
+                    tags_txt.splice(token_index, 1)
+                }
+                else {
+                    thisElem.parentElement.removeChild(thisElem)
+                    tags_txt[token_index].splice(segment_index, 1)
+                }
+            }
+            checkCount()
+        }
+
+        function undo() {
+            if (state == "denoise") {
+                for (var d = 0; d < lastDelim[lastDelim.length - 1]; d++) {
+                    delimiters.pop()
+                }
+                removeLastCODAToken()
+            }
+            else if (state == "tags") {
+                if (tags.length != 0) {
+                    tags.pop()
+                    removeLastPOSFeatures()
+                }
+                else if (tags_txt.length != 0) {
+                    s_len = tags_txt.length - 1
+                    if (tags_txt[s_len].length != 0) {
+                        tags_txt[s_len].pop()
+                        if (tags_txt[s_len].length == 0) {
+                            tags_txt.pop()
+                        }
+                        removeLastPOSFeatures()
+                    }
+                }
+            }
+        }
+
+        function removeLastCODAToken() {
+            startStrCODA = delimiters[delimiters.length - 1]
+            lastDelim.pop()
+            var codaTokens = document.getElementById("newStr")
+            if (raw_txt.length != 0){
+                var lastToken = codaTokens.lastChild
+                codaTokens.removeChild(lastToken)
+                lastToken = codaTokens.lastChild
+                codaTokens.removeChild(lastToken)
+                raw_txt.pop()
+                taxonomy.pop()
+                counterIds -= 1
+            }
+        }
+
+        function removeLastPOSFeatures() {
+            delimitersTags.pop()
+            startStrMorphology = delimitersTags[delimitersTags.length - 1]
+            counterIds -= 1
+            var lastToken = document.getElementById("newStrTags").lastChild
+            if (lastToken.childNodes.length > 3){
+                var lastSegment = lastToken.lastChild
+                lastToken.removeChild(lastSegment)
+                lastSegment = lastToken.lastChild
+                lastToken.removeChild(lastSegment)
+            }
+            else {
+                document.getElementById("newStrTags").removeChild(lastToken)
+            }
+        }
+
+        function saveCoda() {
+            denoised_txt = []
+            taxonomy = []
+            $('#newStr').find('input').each(function(){
+                denoised_txt.push($(this).val().trim());
+            });
+            var codaTokens = document.getElementById('newStr').childNodes
+            for (var i = 0; i < codaTokens.length; i++) {
+                var codaToken = codaTokens[i]
+                if (codaToken.nodeName == "DIV") {
+                    if (codaToken.childNodes.length >= 3) {
+                        taxonomy.push([])
+                        for (var j = 1; j < codaToken.childNodes.length - 1; j++) {
+                            taxonomy[taxonomy.length - 1].push(codaToken.childNodes[j].firstChild.value)
+                        }
+                    }
+                    else {
+                        taxonomy.push("equal")
+                    }
+                }
+            }
+            // state = "tags"
+            updateState()
+
+            console.log("RAW : ",raw_txt)
+            console.log("CODA : ",denoised_txt)
+            console.log("Taxonomy : ", taxonomy)
+        }
+
+        function SaveTags() {
+            segment = []
+
+            poses = []
+            aspects = []
+            persons = []
+            genders = []
+            numbers = []
+            states = []
+            voices = []
+            moods = []
+            flags = []
+            isMSAs = []
+            lemmas = []
+            verbForms = []
+            nounForms = []
+
+            var featuresSentence = {
+                "Aspect": aspects,
+                "Person": persons,
+                "Gender": genders,
+                "Number": numbers,
+                "State": states,
+                "Voice": voices,
+                "Mood": moods,
+                "Verb Form": verbForms,
+                "Noun Form": nounForms
+            }
+            var segmentsTags = document.getElementById("newStrTags").childNodes
+            for (var i = 0; i < segmentsTags.length; i++) {
+                segs = segmentsTags[i].childNodes
+                for (var j = 0; j < segs.length; j++){
+                    seg = segs[j]
+                    if (seg.id != "" && seg.id != "token_edit") {
+                        var features = {
+                            "Aspect": "NA",
+                            "Person": "NA",
+                            "Gender": "NA",
+                            "Number": "NA",
+                            "State": "NA",
+                            "Voice": "NA",
+                            "Mood": "NA",
+                            "Verb Form": "NA",
+                            "Noun Form": "NA"
+                        }
+                        for (var k = 0; k < seg.childNodes[4].childNodes.length; k++) {
+                            var featureName = seg.childNodes[4].childNodes[k].firstChild.nodeValue
+                            var featureValue = seg.childNodes[4].childNodes[k].lastChild.value
+                            features[featureName] = featureValue
+                        }
+                        for (var key in features) {
+                            featuresSentence[key].push(features[key])
+                        }
+                    }
+                }
+            }
+
+            $('#newStrTags').find('.inpt').each(function(){
+                segment.push($(this).val().trim())
+            });
+            $('#newStrTags').find('.pos').each(function(){
+                poses.push($(this).val().trim())
+            });
+            $('#newStrTags').find('.lemma').each(function(){
+                lemmas.push($(this).val())
+            });
+            $('#newStrTags').find('.isMSA').each(function () {
+                isMSAs.push($(this).val().trim())
+            });
+            tokens = document.getElementById('newStrTags').childNodes
+            for (var i = 0; i < tokens.length; i++) {
+                segs = tokens[i].childNodes
+                var tags = []
+                for (var j = 0; j < segs.length; j++) {
+                    seg = segs[j]
+                    if (seg.id != "" && seg.id != "token_edit") {
+                        flags.push(seg.childNodes[7].className)       
+                    }
+                }
+            }
+
+            state = "denoise"
+            updateState()
+            startStrMorphology = 0
+        }
+
+        function SetText(obj) {
+            reset()
+            var t = $(obj).text();
+            original_txt = t.replace("\n","")
+            currentSentenceId = parseInt(obj.parentElement.id.substring(6)) - 1
+            console.log("From Set Text Original : "+original_txt)
+            document.getElementById("raw_txt").value = t
+            var jsontoSend = {
+                original: original_txt,
+                annotator: annotatedIndexes[currentSentenceId]
+            }
+            var toSend = JSON.stringify(jsontoSend)
+            checkIfAnnotated(toSend)
+        }
+
+        function TagSegment(obj){
+            if($(obj).attr("class") == "n_flag"){
+                $(obj).text("UnFlag")
+                $(obj).attr('class', 'flag')
+            }
+            else{
+                $(obj).text("Flag")
+                $(obj).attr('class', 'n_flag')
+            }
+        }
+
+        function reset(resetAll){
+            if (document.getElementById("fix_sentence").value == "Validate Fix") {
+                document.getElementById("fixed_raw_txt").style.display = "none"
+                document.getElementById("raw_txt").disabled = false
+                document.getElementById("fix_sentence").value = "Fix Phrase"
+            }
+            
+            document.getElementById("fix_sentence").disabled = false
+            var phraseIndex = currentSentenceId
+            if (resetAll != undefined && resetAll.id == 'resetAllButton'){
+                if (annotatedIndexes[phraseIndex] != 'me' && filteredState == true && annotatedIndexes[phraseIndex] != 'notAnnotated') {
+                    alert('This sentence shall NOT... PASS! It does not belong to you :)')
+                    return;
+                }
+                var jsontoSend = {
+                    original: original_txt,
+                    "delete": "yes"
+                }
+                console.log(jsontoSend)
+                
+                var toSend = JSON.stringify(jsontoSend)
+                fetch(`/getdata/${toSend}`)
+                    .then(function (response) {
+                        return response.text();
+                    }).then(function (text) {
+                        if (text == 'file not well formed') {
+                            alert('There is something wrong with your file. Please stop annotation and contact me :)')
+                        }
+                        else if (text == 'different annotator') {
+                            alert('This sentence shall NOT... PASS! It does not belong to you :)')
+                        }
+                        else {
+                            annotatedIndexes[phraseIndex] = "notAnnotated"
+                            zeroVariables(true, true)
+                            document.getElementById("phrase" + (phraseIndex + 1)).className = "";
+                            updateCount(text)
+                        }
+                        console.log('GET response text:');
+                        console.log(text);
+                    });
+            }
+            else {
+                zeroVariables(true, true)
+            }
+        }
+
+        function zeroVariables(zeroCODA, zeroMorphology){
+            if (zeroCODA == true) {
+                document.getElementById("newStr").innerHTML = ""
+                denoised_txt = []
+                taxonomy = []
+                raw_txt = []
+                delimiters = []
+                startStrCODA = 0
+                state = "denoise"
+                beginTags = false
+                lastDelim = []
+                undoEnabled = true
+                counterIds = 0
+            }
+            if (zeroMorphology == true) {
+                document.getElementById("newStrTags").innerHTML = ""
+                tags_txt = []
+                tags = []
+
+                segment = []
+                poses = []
+                aspects = []
+                persons = []
+                genders = []
+                numbers = []
+                states = []
+                voices = []
+                moods = []
+                flags = []
+                isMSAs = []
+                lemmas = []
+                verbForms = []
+                nounForms = []
+
+                startStrMorphology = 0
+                state = "tags"
+                beginTags = true
+                delimitersTags = []
+                undoEnabled = true
+            }
+
+            if (zeroCODA ^ zeroMorphology == false) {
+                state = "denoise"
+                fixed_phrase = ""
+                beginTags = false
+            }
+
+            updateState()
+            checkCount()
+        }
+
+        function resetCODA() {
+            zeroVariables(true, false)
+        }
+
+        function resetMorphology() {
+            zeroVariables(false, true)
+        }
+
+        function generatePrevTaxonomyTags(annotations, coda) {
+            var codaTokens = document.getElementById("newStr").childNodes
+            taxonomy = annotations["taxonomy"]
+            for (var i = 0; i < coda.length; i++) {
+                if (taxonomy[i] != "equal") {
+                    addTaxonomyTag(undefined, codaTokens[i * 2], taxonomy[i])
+                }
+            }
+        }
+
+        function generatePreviousAnnotations(text){
+            delimiters = []
+            var annotaions = JSON.parse(text)
+            console.log(annotaions)
+            var coda = annotaions["coda"]
+            var segments = annotaions["segments"]
+            var delims = annotaions["delimiters"]
+            var fixed_phrs = annotaions["fixed"]
+            var original_phrs = annotaions["original"]
+            undoEnabled = false
+
+            if(fixed_phrs != ""){
+                document.getElementById("raw_txt").value = fixed_phrs
+                original_txt = original_phrs
+                fixed_phrase = fixed_phrs
+            }
+            else{
+                document.getElementById("raw_txt").value = original_phrs
+                original_txt = original_phrs
+            }
+
+            var phraseIndex = currentSentenceId
+            if (filteredState == true) {
+                document.getElementById("phrase" + (phraseIndex + 1)).className = annotatorColors[annotatedIndexes[phraseIndex]];
+            }
+            else {
+                document.getElementById("phrase" + (phraseIndex + 1)).className = "bg-success";
+            }
+
+            if(coda.length != 0){
+                state = "tags"
+                updateState()
+                beginTags = true
+                delimiters = delims
+                raw_txt = annotaions["raw"]
+                denoised_txt = coda
+            }
+            else{
+                state = "denoise"
+                updateState()
+            }
+
+            coda.forEach(c => {
+                createCODAToken(c)
+            });
+            generatePrevTaxonomyTags(annotaions, coda)
+
+            if(segments.length != 0){
+            segments.forEach(s => {
+                s.forEach(ss => {
+                    tags.push(ss["text"])
+                })
+                tags_txt.push(tags)
+                tags = []
+            })
+
+            checkCount()
+
+            var ws = []
+            var wsl = []
+
+                counterIds = 0
+                segments.forEach(s => {
+                    document.getElementById("newStrTags").innerHTML += newToken()
+                    s.forEach(ss => { 
+                        var pos = 
+                            '<select name="pos" class="pos w-14 h-25" onchange="getCorrespondingFeatures(this)" id="' + counterIds + '">' +
+                            '<option value="NONE" selected>NONE</option>'
+
+                        pos_vals.forEach(p => {
+                            pos += '<option value="'+p+'">'+p+'</option>'
+                        });
+                        pos += "</select>"
+
+                        var lemma = '<textarea class="lemma" style="font-size: 150%" id="lemma" name="lemma">' + ss["text"] + '</textarea>'
+
+                        var isMSA =
+                            '<select name="isMSA" class="isMSA" id="isMSA' + counterIds + '" size="3">' +
+                            '<option value="Lebanese" selected>Lebanese</option>' +
+                        '<option value="MSA">MSA</option>' +
+                        '<option value="Other">Other</option>'
+                        isMSA += "</select>"
+
+                        var flag_Btn = ""
+                        if(ss["flag"] == "n_flag"){
+                            flag_Btn = '<button class="'+ss["flag"]+'" value="'+ss["text"]+'" onclick="TagSegment(this)">Flag</button></div></br>'
+                        }
+                        else{
+                            flag_Btn = '<button class="'+ss["flag"]+'" value="'+ss["text"]+'" onclick="TagSegment(this)">Unflag</button></div></br>'
+                        }
+
+                        pos_features = "<div id=\"pos&features\" class=\"row\" style=\"margin-top: 5%; background-color: rgb(190,190,190);\"> "
+                        pos_features += '<div id="segment_edit" class="btn-group" role="group" aria-label="Basic example" style="height: 35px">'
+                        pos_features += '<button id="add-remove-row" type="button" class="btn btn-secondary" onclick="addElem(this)">+↑</button>'
+                        pos_features += '<button id="add-remove-row" type="button" class="btn btn-secondary" onclick="addElem(this)">+↓</button>'
+                        pos_features += '<button id="add-remove-row" type="button" class="btn btn-secondary" onclick="deleteElem(this)">✖</button></div>'
+                        pos_features += "<input dir=\"rtl\" class=\"inpt w-30\" type=\"text\" value=\"" + ss["text"] + "\" style=\"font-size: 150%; height: 50px\">"
+                        pos_features += pos
+                        pos_features += "<div id=\"features\"></div>"
+                        pos_features += lemma + isMSA + flag_Btn
+                        document.getElementById("newStrTags").lastChild.innerHTML += pos_features
+                        counterIds += 1;
+                        
+                        var wss = [];
+                        wss.push(ss["pos"])
+                        wss.push(ss["isMSA"])
+                        if (ss["aspect"] != null) {wss.push(ss["aspect"])}
+                        if (ss["person"] != null) { wss.push(ss["person"]) }
+                        if (ss["gender"] != null) { wss.push(ss["gender"]) }
+                        if (ss["number"] != null) { wss.push(ss["number"]) }
+                        if (ss["state"] != null) { wss.push(ss["state"]) }
+                        if (ss["voice"] != null) { wss.push(ss["voice"]) }
+                        if (ss["mood"] != null) { wss.push(ss["mood"]) }
+                        if (ss["verbForm"] != null) { wss.push(ss["verbForm"]) }
+                        if (ss["nounForm"] != null) { wss.push(ss["nounForm"]) }
+                        ws.push(wss);
+                        wsl.push(ss["lemma"])
+                    })
+                })
+
+                var options2 = document.getElementById("newStrTags").getElementsByTagName("textarea")
+
+                for(var y = 0; y < options2.length; y++){
+                    options2[y].value = wsl[y]
+                }
+
+                for(var i = 0; i < ws.length; i++){
+                    var pos = document.getElementById(i.toString())
+                    var isMSA = document.getElementById('isMSA' + i.toString())
+                    var features = document.getElementById("features" + i.toString())
+                    pos.value = ws[i][0]
+                    isMSA.value = ws[i][1]
+                    getCorrespondingFeatures(pos)
+                    var k = 0
+                    for (let j = 2; j < ws[i].length; j++) {
+                        if (ws[i][j] != "NA"){
+                            pos.nextSibling.childNodes[k].lastChild.value = ws[i][j]
+                            k += 1
+                        }
+                    }
+                }
+            }
+        }
+
+        function sync(){
+            document.getElementById("loading").classList.remove('d-none');
+            fetch(`/sync`)
+                .then(function (response) {
+                    return response.text();
+                }).then(function (text) {
+                    console.log('GET response:');
+                    console.log(text);
+                    document.getElementById("loading").classList.add('d-none');
+                });
+        }
+        
+        function nextPhrase() {
+            SaveTags()
+            saveCoda()
+            //Get Current Index
+            var phraseIndex = currentSentenceId
+
+            // Change raw_txt input to the next phrase
+            if(phraseIndex + 1 > phrasesArray.length){
+                alert("Last Phrase")
+            }
+            else{
+                if (annotatedIndexes[phraseIndex] != 'me' && filteredState == true && annotatedIndexes[phraseIndex] != 'notAnnotated') {
+                    alert('This sentence shall NOT... PASS! It does not belong to you :)')
+                    return;
+                }
+
+            var tokens = document.getElementById("newStrTags").childNodes
+            tags_txt = []
+            for (var i = 0; i < tokens.length; i++) {
+                segs = tokens[i].childNodes
+                var tags = []
+                for (var j = 0; j < segs.length; j++) {
+                    seg = segs[j]
+                    if (seg.id != "" && seg.id != "token_edit") {
+                        tags.push(seg.childNodes[2].value.trim())
+                    }
+                }
+                tags_txt.push(tags)
+            }
+            
+            var segmentations = []
+            for(var i = 0;i<tags_txt.length;i++){
+                var segs = []
+                for(var j = 0; j<tags_txt[i].length;j++){
+                    var indxx = segment.indexOf(tags_txt[i][j])
+                    var obj = {
+                        "text": segment[indxx],
+                        "pos": poses[indxx],
+                        "aspect": aspects[indxx],
+                        "person": persons[indxx],
+                        "gender": genders[indxx],
+                        "number": numbers[indxx],
+                        "state": states[indxx],
+                        "voice": voices[indxx],
+                        "mood": moods[indxx],
+                        "verbForm": verbForms[indxx],
+                        "nounForm": nounForms[indxx],
+                        "lemma": lemmas[indxx],
+                        "flag": flags[indxx],
+                        "isMSA": isMSAs[indxx]
+                    }
+                    segs.push(obj)
+                }
+                segmentations.push(segs)
+            }
+
+            var jsontoSend = {
+                original: original_txt,
+                delimiters: delimiters,
+                fixed: fixed_phrase,
+                raw: raw_txt,
+                coda: denoised_txt,
+                taxonomy: taxonomy,
+                segments: segmentations  
+            }
+            var toSend = JSON.stringify(jsontoSend)
+            console.log(jsontoSend)
+
+            fetch(`/getdata/${toSend}`)
+                .then(function (response) {
+                    return response.text();
+                }).then(function (text) {
+                    if (text == "file not well formed") {
+                        alert('There is something wrong with your file. Please stop annotation and contact me :)')
+                    }
+                    else if (text == "invalid annotation") {
+                        alert('There seems to be something wrong with the annotation of this sentence, most probably due to segmentation. Correct the mistakes before being able to save.')
+                    }
+                    else if (text == "different annotator") {
+                        alert('This sentence shall NOT... PASS! It does not belong to you :)')
+                    }
+                    else {
+                        currentSentenceId += 1
+                        document.getElementById("phrase" + (phraseIndex + 1)).className = "bg-success";
+                        document.getElementById("raw_txt").value = phrasesArray[phraseIndex + 1]
+                        if (filteredState == true ){
+                            annotatedIndexes[phraseIndex] = "me"
+                        }
+                        else {
+                            annotatedIndexes[phraseIndex] = "annotated"
+                        }
+                        var jsontoSend = {
+                            original: phrasesArray[phraseIndex + 1],
+                            annotator: annotatedIndexes[phraseIndex + 1]
+                        }
+                        var toSend = JSON.stringify(jsontoSend)
+                        checkIfAnnotated(toSend)
+                        updateCount(text)
+                        reset()
+                        original_txt = phrasesArray[phraseIndex + 1]
+                    }
+                    console.log('GET response text:');
+                    console.log(text); 
+                });
+        }
+    }
+    </script>
+</body>
+
+</html>
