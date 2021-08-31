@@ -5,6 +5,10 @@ This repository contains the code for the annotation software, *Annotatio*, that
 ## Disclaimer
 This repository has yet to be polished and is still in the same state in which it was left at submission time. It was not in any way made to be user-friendly, and was pushed for the time being for purely administrative reasons. It will soon be overhauled and released in a form which is more readily usable.
 
+<p align="center">
+  <img width="100%" height="100%" src="assets/annotatio-interface.jpg">
+</p>
+
 ## Some Information
 *Annotatio* was developed using *Flask* and *JavaScript*, and is in no way a final product since it still needs heavy tweaking.
 
