@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, request, render_template, jsonify, abort
+from flask import Flask, request, render_template
 import json
 import methods
 import os
@@ -279,6 +279,6 @@ def get_count():
 if __name__ == '__main__':
     # methods.get_annotated_sentences(os.path.join(
     #     os.getcwd(), f'annotations'), config["annotators"])
-    import logging
-    logging.basicConfig(filename='error.log', level=logging.DEBUG)
+    # import logging
+    # logging.basicConfig(filename='error.log', level=logging.DEBUG)
     app.run(host='0.0.0.0')

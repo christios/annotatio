@@ -1,1 +1,4 @@
 .DS_Store
+annotations_*.json
+.vscode
+__pycache__
