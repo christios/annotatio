@@ -9,15 +9,20 @@ This repository has yet to be polished and is still in the same state in which i
 *Annotatio* was developed using *Flask* and *JavaScript*, and is in no way a final product since it still needs heavy tweaking.
 
 It allows annotators to perform:
-- Source-target pair segmentation
-- Orthography standardization
+- Source-target pair Segmentation
+- Orthography Standardization
 - Morphological Segmentation
-- Morphological (+ POS) tagging
+- Morphological (+ POS) Tagging
 - Spontaneous Orthography Tagging
 
 ## Running the App
-To run the app, one must have a version of Python which is greater than 3.5, and the latest version of the Flask library. Simply run:
+To run the app, the following is required:
+
+- Python >= 3.5
+- Flask (latest version)
+
+Then, simply run:
 
     python3 app.py
 
-and open `127.0.0.1:5000` on your browser. Sentences which are in the `annotatio/annotations/corpus` directory files will be saved to a file in `annotatio/annotations` named `annotations_$NAME.json` where `$NAME` is specified as the value of the `current_annotator` key in the `annotatio/config.json` file.
+and open `127.0.0.1:5000` on your browser. Sentences which are in the `annotatio/annotations/corpus` files will be saved to a file in `annotatio/annotations` named `annotations_$NAME.json` where `$NAME` is specified as the value of the `current_annotator` key in the `annotatio/config.json` file.
