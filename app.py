@@ -105,7 +105,7 @@ def getCounts(dataaz):
         1 for d in dataaz for token in d['segments'] if token[0]['pos'] != 'NONE')
     completed_taxonomy_tags = sum(
         1 for d in dataaz for token in d['taxonomy'] if token != 'equal' and token[0] != 'NONE')
-    counts = f'{completed_taxonomy_tags:,} / {NUMBER_OF_TOKENS_TAXONOMY:,}  |  {completed_taxonomy_tags/NUMBER_OF_TOKENS_TAXONOMY:.1%}' + \
+    counts = f'{completed_taxonomy_tags:,} / {NUMBER_OF_TOKENS_TAXONOMY:,}  |  {completed_taxonomy_tags/NUMBER_OF_TOKENS_TAXONOMY if NUMBER_OF_TOKENS_TAXONOMY else 0:.1%}' + \
         ' — ' + \
         f'{completed_morphology_tokens:,} / {NUMBER_OF_TOKENS:,}  |  {completed_morphology_tokens/NUMBER_OF_TOKENS:.1%}'
     return counts
